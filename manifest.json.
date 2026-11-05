@@ -1,8 +1,16 @@
 {
   "name": "Absensi PT PPM",
-  "short_name": "Absensi",
+  "short_name": "Absensi PPM",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a"
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "PT Palma New.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
