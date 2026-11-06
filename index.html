@@ -155,7 +155,7 @@
     </div>
 
     <script>
-        const PASSWORD_OPERATOR = "12345"; 
+        const PASSWORD_OPERATOR = "w1ll14m5"; 
         const LIMIT_DATA = 10;
         let pageKaryawan = 1;
         let pageAbsen = 1;
@@ -388,15 +388,26 @@
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("reader");
             }
+            
+            const config = { fps: 10, qrbox: 200 };
+            
             html5QrCode.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: 200 },
+                { facingMode: "environment" }, 
+                config, 
                 onScanSuccess
             ).catch(err => {
-                console.error("Kamera error:", err);
+                console.warn("Kamera belakang gagal diakses, mencoba kamera alternatif...", err);
+                html5QrCode.start(
+                    { facingMode: "user" }, 
+                    config, 
+                    onScanSuccess
+                ).catch(fallbackErr => {
+                    console.error("Semua kamera gagal diakses:", fallbackErr);
+                    document.getElementById('scan-result').innerHTML = 
+                        `<span class="text-red-600">❌ Gagal membuka kamera. Periksa izin peramban Anda.</span>`;
+                });
             });
         }
-
         function tambahDanGenerate() {
             const nik = document.getElementById('input-nik').value;
             const id = document.getElementById('input-id').value;
