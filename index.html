@@ -395,11 +395,11 @@
             };
         }
 
-        let html5QrCode = null;
 let saatIniFacingMode = "environment"; // Default kamera belakang
 
 function mulaiKamera() {
-    if (!html5QrCode) {
+    // Menggunakan variabel global html5QrCode yang sudah ada di atas
+    if (typeof html5QrCode === 'undefined' || !html5QrCode) {
         html5QrCode = new Html5Qrcode("reader");
     }
 
