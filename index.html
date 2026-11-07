@@ -434,6 +434,7 @@ function mulaiKamera() {
 function jalankanScanner(cameraConfig) {
     const config = { fps: 10, qrbox: 200 };
     
+    // Pastikan onScanSuccess disertakan di parameter ketiga
     html5QrCode.start(cameraConfig, config, onScanSuccess)
     .then(() => {
         document.getElementById('scan-result').innerHTML = 
