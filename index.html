@@ -1,4 +1,171 @@
-<script>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Operator Absensi PT. Palma Pertiwi Makmur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-lg flex flex-col">
+        
+        <!-- Header dengan Logo -->
+        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 text-center flex items-center justify-between shadow-lg rounded-b-2xl mb-4">
+            <div class="flex items-center space-x-3">
+                <img src="logo.png" alt="Logo PT PPM" class="w-12 h-12 object-contain bg-white/10 backdrop-blur rounded-xl p-1 shadow-inner border border-white/20" onerror="this.style.display='none'">
+                <div class="text-left">
+                    <h1 class="text-base font-extrabold tracking-wide leading-tight">PT. Palma Pertiwi Makmur</h1>
+                    <p class="text-[11px] text-blue-100 font-medium">Sistem Absensi Barcode Publik </p>
+                </div>
+            </div>
+        </header>
+        <!-- Konten Utama -->
+        <main class="p-4 flex-1">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center mb-3">
+                <p class="text-xs text-blue-800">Waktu Server Lokal:</p>
+                <div id="live-clock" class="text-lg font-bold text-blue-900">00:00:00</div>
+            </div>
+
+            <!-- Status Perangkat Banner -->
+            <div id="device-alert" class="mb-3 p-2 rounded text-xs font-semibold text-center hidden"></div>
+
+            <!-- Tombol Navigasi Menu -->
+            <div class="grid grid-cols-4 gap-1 mb-3">
+                <button onclick="gantiTab('scan')" id="btn-scan" class="py-2 bg-blue-600 text-white rounded-lg text-[11px] font-medium shadow">Scan Absen</button>
+                <button onclick="validasiAkses('karyawan')" id="btn-karyawan" class="py-2 bg-gray-200 text-gray-700 rounded-lg text-[11px] font-medium">🔒 Karyawan</button>
+                <button onclick="validasiAkses('absen')" id="btn-absen" class="py-2 bg-gray-200 text-gray-700 rounded-lg text-[11px] font-medium">🔒 Rekap Absen</button>
+                <button onclick="validasiAkses('device')" id="btn-device" class="py-2 bg-gray-200 text-gray-700 rounded-lg text-[11px] font-medium">🔒 Perangkat</button>
+            </div>
+
+            <!-- Tab 1: Scanner Absensi -->
+            <div id="tab-scan">
+                <div class="bg-white p-2 rounded-t border border-b-0 text-center text-xs text-blue-600 font-bold">
+                    📱 Silakan arahkan Barcode/QR ID Card ke kamera
+                </div>
+                <div id="scanner-wrapper" class="border-2 border-dashed border-gray-300 rounded-b-lg p-2 text-center bg-gray-50 space-y-2">
+                    <!-- Tombol & Dropdown Pilih/Putar Kamera -->
+                    <div class="flex items-center justify-between space-x-2">
+                        <select id="camera-select" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-lg p-2 flex-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Memuat daftar kamera...</option>
+                        </select>
+                        <button onclick="tukarKameraManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-3 py-2 rounded-lg transition-all duration-200 shadow-sm">
+                            🔄 Putar
+                        </button>
+                    </div>
+                
+                    <div id="reader" class="w-full"></div>
+                    <div id="scan-result" class="mt-2 p-2 rounded text-sm bg-white border font-medium text-gray-700">
+                        Memeriksa status perangkat...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Data Karyawan & Generator QR -->
+            <div id="tab-karyawan" class="hidden space-y-4">
+                <div class="bg-gray-50 p-3 rounded border">
+                    <h2 class="font-bold text-gray-700 mb-2 text-sm">Daftar Karyawan Baru & Foto</h2>
+                    <input type="text" id="input-nik" placeholder="Masukkan NIK" class="w-full p-1.5 text-sm border rounded mb-2">
+                    <input type="text" id="input-id" placeholder="ID Karyawan (cth: 26TKS017)" class="w-full p-1.5 text-sm border rounded mb-2">
+                    <input type="text" id="input-nama" placeholder="Nama Lengkap & Gelar" class="w-full p-1.5 text-sm border rounded mb-2">
+                    
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Upload Pas Foto Karyawan:</label>
+                    <input type="file" id="input-foto" accept="image/*" class="w-full text-xs text-gray-500 mb-3 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+
+                    <button onclick="tambahDanGenerate()" class="w-full bg-green-600 text-white py-1.5 rounded text-sm font-semibold">Simpan & Buat ID Card</button>
+                </div>
+
+                <!-- Area Preview & Download ID Card -->
+                <div id="container-qrcode" class="bg-white p-3 rounded border text-center hidden">
+                    <h3 class="font-bold text-gray-700 text-sm mb-1">Pratinjau ID Card Karyawan</h3>
+                    
+                    <div id="id-card-preview" class="p-3 bg-white border-2 border-blue-600 rounded-xl inline-block my-2 w-60 text-center shadow-md">
+                        <p class="text-[11px] font-bold text-blue-900 tracking-wider">PT. PALMA PERTIWI MAKMUR</p>
+                        <hr class="my-1 border-blue-200">
+                        
+                        <div class="my-2 flex justify-center">
+                            <img id="preview-foto" src="" alt="Foto" class="w-20 h-24 object-cover rounded border border-gray-300 shadow-inner bg-gray-100" style="display:none;">
+                            <div id="preview-no-foto" class="w-20 h-24 rounded border border-gray-300 bg-gray-50 flex items-center justify-center text-[10px] text-gray-400">
+                                Pas Foto
+                            </div>
+                        </div>
+
+                        <h4 id="preview-nama" class="font-bold text-xs text-gray-900 mt-1 leading-snug"></h4>
+                        <p id="preview-id" class="text-[11px] font-semibold text-blue-700"></p>
+                        <p id="preview-nik" class="text-[10px] text-gray-500 mb-2"></p>
+
+                        <div id="qrcode" class="flex justify-center my-1 scale-90"></div>
+                    </div>
+
+                    <div class="mt-2">
+                        <button onclick="downloadIDCardPNG()" class="bg-blue-600 text-white px-4 py-1.5 rounded text-xs font-semibold shadow hover:bg-blue-700">📥 Download Sebagai Gambar PNG</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-3 rounded border">
+                    <h2 class="font-bold text-gray-700 mb-1 text-sm">Database Karyawan Terdaftar</h2>
+                    <input type="text" id="search-karyawan" oninput="pageKaryawan=1; muatDaftarKaryawan();" placeholder="🔍 Cari berdasarkan NIK, ID, atau Nama..." class="w-full p-1.5 text-xs border rounded mb-2 bg-gray-50">
+                    
+                    <div id="list-db-karyawan" class="text-xs text-gray-600 space-y-2 min-h-[120px]">
+                        Memuat data karyawan...
+                    </div>
+
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t text-xs">
+                        <button onclick="gantiHalamanKaryawan(-1)" id="btn-prev-karyawan" class="px-3 py-1 bg-gray-200 rounded font-semibold text-gray-700 hover:bg-gray-300">⬅️ Prev</button>
+                        <span id="page-info-karyawan" class="text-gray-500">Hal 1 dari 1</span>
+                        <button onclick="gantiHalamanKaryawan(1)" id="btn-next-karyawan" class="px-3 py-1 bg-gray-200 rounded font-semibold text-gray-700 hover:bg-gray-300">Next ➡️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Rekap Absensi & Export ke Bendahara -->
+            <div id="tab-absen" class="hidden space-y-3">
+                <div class="bg-white p-3 rounded border">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="font-bold text-gray-700 text-sm">Laporan Master untuk Bendahara</h2>
+                        <button onclick="exportKeExcelRapi()" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-semibold shadow hover:bg-emerald-700">📥 Download Master Excel (.xls)</button>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mb-2">Mengunduh laporan rekap harian per karyawan secara otomatis dan terstruktur.</p>
+                    
+                    <input type="text" id="search-absen" oninput="pageAbsen=1; muatRiwayat();" placeholder="🔍 Cari riwayat berdasarkan NIK, ID, atau Nama..." class="w-full p-1.5 text-xs border rounded mb-2 bg-gray-50">
+
+                    <div id="list-riwayat" class="text-xs text-gray-600 space-y-1 min-h-[150px]">
+                        Memuat riwayat absensi...
+                    </div>
+
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t text-xs">
+                        <button onclick="gantiHalamanAbsen(-1)" id="btn-prev-absen" class="px-3 py-1 bg-gray-200 rounded font-semibold text-gray-700 hover:bg-gray-300">⬅️ Prev</button>
+                        <span id="page-info-absen" class="text-gray-500">Hal 1 dari 1</span>
+                        <button onclick="gantiHalamanAbsen(1)" id="btn-next-absen" class="px-3 py-1 bg-gray-200 rounded font-semibold text-gray-700 hover:bg-gray-300">Next ➡️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Pengaturan Perangkat -->
+            <div id="tab-device" class="hidden space-y-3">
+                <div class="bg-gray-50 p-3 rounded border">
+                    <h2 class="font-bold text-gray-700 mb-1 text-sm">Kendali Perangkat Resmi Kantor</h2>
+                    <p class="text-xs text-gray-500 mb-3">Sistem terkunci hanya untuk satu perangkat operasional.</p>
+                    
+                    <div id="device-info-box" class="p-2 mb-3 bg-white border rounded text-xs text-gray-600">
+                        Status Token: Memuat...
+                    </div>
+
+                    <button onclick="daftarkanPerangkatIni()" class="w-full bg-blue-600 text-white py-2 rounded text-xs font-semibold mb-2">Jadikan Perangkat Ini Sebagai Resmi</button>
+                    <button onclick="resetPerangkat()" class="w-full bg-red-600 text-white py-2 rounded text-xs font-semibold">Ganti Perangkat Baru (Jika Rusak)</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
         const PASSWORD_OPERATOR = "w1ll14m5"; 
         const LIMIT_DATA = 10;
         let pageKaryawan = 1;
@@ -717,3 +884,5 @@
             };
         }
     </script>
+</body>
+</html>
