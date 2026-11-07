@@ -50,7 +50,17 @@
                 <div class="bg-white p-2 rounded-t border border-b-0 text-center text-xs text-blue-600 font-bold">
                     📱 Silakan arahkan Barcode/QR ID Card ke kamera
                 </div>
-                <div id="scanner-wrapper" class="border-2 border-dashed border-gray-300 rounded-b-lg p-2 text-center bg-gray-50">
+                <div id="scanner-wrapper" class="border-2 border-dashed border-gray-300 rounded-b-lg p-2 text-center bg-gray-50 space-y-2">
+                    <!-- Tombol & Dropdown Pilih/Putar Kamera -->
+                    <div class="flex items-center justify-between space-x-2">
+                        <select id="camera-select" class="bg-white border border-gray-300 text-gray-900 text-xs rounded-lg p-2 flex-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Memuat daftar kamera...</option>
+                        </select>
+                        <button onclick="tukarKameraManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-3 py-2 rounded-lg transition-all duration-200 shadow-sm">
+                            🔄 Putar
+                        </button>
+                    </div>
+                
                     <div id="reader" class="w-full"></div>
                     <div id="scan-result" class="mt-2 p-2 rounded text-sm bg-white border font-medium text-gray-700">
                         Memeriksa status perangkat...
@@ -385,30 +395,72 @@
             };
         }
 
-        function mulaiKamera() {
-            if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
-            }
-            
-            const config = { fps: 10, qrbox: 200 };
-            
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config, 
-                onScanSuccess
-            ).catch(err => {
-                console.warn("Kamera belakang gagal diakses, mencoba kamera alternatif...", err);
-                html5QrCode.start(
-                    { facingMode: "user" }, 
-                    config, 
-                    onScanSuccess
-                ).catch(fallbackErr => {
-                    console.error("Semua kamera gagal diakses:", fallbackErr);
-                    document.getElementById('scan-result').innerHTML = 
-                        `<span class="text-red-600">❌ Gagal membuka kamera. Periksa izin peramban Anda.</span>`;
-                });
+        let html5QrCode = null;
+let saatIniFacingMode = "environment"; // Default kamera belakang
+
+function mulaiKamera() {
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+
+    // Ambil daftar kamera yang tersedia di perangkat (Android/iOS)
+    Html5Qrcode.getCameras().then(devices => {
+        const selectElem = document.getElementById('camera-select');
+        if (devices && devices.length > 0) {
+            selectElem.innerHTML = '';
+            devices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.text = device.label || `Kamera ${index + 1}`;
+                selectElem.appendChild(option);
             });
+
+            // Jalankan kamera berdasarkan pilihan dropdown aktif
+            jalankanScanner({ deviceId: { exact: selectElem.value } });
+
+            // Event Listener jika pengguna mengganti pilihan kamera dari dropdown
+            selectElem.onchange = function() {
+                hentikanDanJalankanKamera({ deviceId: { exact: this.value } });
+            };
+        } else {
+            jalankanScanner({ facingMode: saatIniFacingMode });
         }
+    }).catch(err => {
+        console.warn("Gagal mendapatkan daftar kamera, menggunakan mode fallback:", err);
+        jalankanScanner({ facingMode: saatIniFacingMode });
+    });
+}
+
+function jalankanScanner(cameraConfig) {
+    const config = { fps: 10, qrbox: 200 };
+    
+    html5QrCode.start(cameraConfig, config, onScanSuccess)
+    .then(() => {
+        document.getElementById('scan-result').innerHTML = 
+            `<span class="text-green-600 font-semibold">✅ Perangkat Siap. Arahkan Barcode!</span>`;
+    })
+    .catch(err => {
+        console.error("Gagal membuka kamera:", err);
+        document.getElementById('scan-result').innerHTML = 
+            `<span class="text-red-600">❌ Gagal membuka kamera: ${err}</span>`;
+    });
+}
+
+function hentikanDanJalankanKamera(cameraConfig) {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+            jalankanScanner(cameraConfig);
+        }).catch(err => console.error("Gagal menghentikan kamera:", err));
+    } else {
+        jalankanScanner(cameraConfig);
+    }
+}
+
+// Fungsi untuk tombol putar kamera cepat (Depan <-> Belakang)
+function tukarKameraManual() {
+    saatIniFacingMode = (saatIniFacingMode === "environment") ? "user" : "environment";
+    hentikanDanJalankanKamera({ facingMode: saatIniFacingMode });
+}
         function tambahDanGenerate() {
             const nik = document.getElementById('input-nik').value;
             const id = document.getElementById('input-id').value;
