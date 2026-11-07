@@ -27,6 +27,7 @@
                 </div>
             </div>
         </header>
+
         <!-- Konten Utama -->
         <main class="p-4 flex-1">
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center mb-3">
@@ -232,7 +233,7 @@
         }, 1000);
 
         let html5QrCode = null;
-        let saatIniFacingMode = "environment"; // Default kamera belakang
+        let saatIniFacingMode = "environment";
 
         window.addEventListener('DOMContentLoaded', () => {
             cekStatusPerangkat();
@@ -260,7 +261,6 @@
                 scannerWrapper.classList.remove('opacity-50', 'pointer-events-none');
                 document.getElementById('device-info-box').innerHTML = `<b>Status:</b> Aktif<br><span class="text-[10px] text-gray-400">Token: ${officialToken}</span>`;
                 
-                // Inisialisasi Scanner Kamera setelah status perangkat valid
                 inisialisasiKamera();
             }
         }
@@ -328,7 +328,6 @@
         let lastScanTime = 0;
         let lastScanId = "";
 
-        // --- FUNGSI UTAMA PEMROSESAN QR CODE (SCAN SUCCESS) ---
         function onScanSuccess(decodedText, decodedResult) {
             if (!localStorage.getItem('OFFICIAL_DEVICE_TOKEN')) {
                 alert("Absen ditolak! Perangkat belum resmi.");
@@ -350,7 +349,6 @@
                 return;
             }
 
-            // Ambil data karyawan terlebih dahulu secara aman
             const transKaryawan = db.transaction(["karyawan"], "readonly");
             const storeKaryawan = transKaryawan.objectStore("karyawan");
             const reqKaryawan = storeKaryawan.getAll();
@@ -369,7 +367,6 @@
                 const tanggalString = now.toISOString().split('T')[0];
                 const hasilAturan = evaluasiAbsensi(jamString);
 
-                // Cek riwayat absensi pada hari dan sesi yang sama
                 const transRiwayatCheck = db.transaction(["riwayat"], "readonly");
                 const storeRiwayatCheck = transRiwayatCheck.objectStore("riwayat");
                 const reqRiwayat = storeRiwayatCheck.getAll();
@@ -385,7 +382,6 @@
                         return;
                     }
 
-                    // Simpan data absensi baru ke database
                     const transWrite = db.transaction(["riwayat"], "readwrite");
                     const storeWrite = transWrite.objectStore("riwayat");
                     
@@ -414,7 +410,6 @@
             };
         }
 
-        // --- PENGELOLAAN KAMERA & DROPDOWN ---
         function inisialisasiKamera() {
             if (!html5QrCode) {
                 html5QrCode = new Html5Qrcode("reader");
